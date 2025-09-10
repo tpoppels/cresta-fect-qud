@@ -98,6 +98,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<p>Cresta’s <a href="https://kdd-eval-workshop.github.io/genai-evaluation-kdd2025/assets/papers/Submission%2022.pdf">KDD paper</a> on factuality assessment proposed the <code>3D paradigm</code> for factuality evaluation in an LLM-as-judge framework.</p>
+<p>Here, we try to build on this approach by directing the LLM to process conversational data through the Question Under Discussion (QUD) framework.</p>
+<p>We use the <a href="https://github.com/cresta/fect">synthetic datasets</a> published alongside the original paper to compare the original 3D paradigm to the novel QUD-based approach, focusing on the OpenAI models only.</p>
 <div id="d3932bbf-acf6-4f8f-b3a9-a870a599fedd" class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
@@ -165,6 +168,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+<p>The initial comparison suggests that we might be onto something here: the QUD prompt does significantly better than the BASIC prompt, and is comparable to the 3D paradigm prompt.</p>
+<p>Note that it also reverts one of the counterintuitive findings from the original paper, namely that test-time compute (TTC) tended to degrade performance under the 3D paradigm: the QUD prompt appears to actually benefit from TTC, at least with the more sophisticated <code>gpt-4.1-mini</code> model.</p>
 
 </main>
 <!-- /main column -->
