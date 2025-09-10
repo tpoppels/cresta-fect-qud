@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+env/
+venv/
+
+# Jupyter
+ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# OS
+.DS_Store
+
+# Build
+docs/*ipynb
