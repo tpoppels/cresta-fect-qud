@@ -98,10 +98,119 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>Cresta’s <a href="https://kdd-eval-workshop.github.io/genai-evaluation-kdd2025/assets/papers/Submission%2022.pdf">KDD paper</a> on factuality assessment proposed the <code>3D paradigm</code> for factuality evaluation in an LLM-as-judge framework.</p>
-<p>Here, we try to build on this approach by directing the LLM to process conversational data through the Question Under Discussion (QUD) framework.</p>
-<p>We use the <a href="https://github.com/cresta/fect">synthetic datasets</a> published alongside the original paper to compare the original 3D paradigm to the novel QUD-based approach, focusing on the OpenAI models only.</p>
-<div id="d3932bbf-acf6-4f8f-b3a9-a870a599fedd" class="cell">
+<section id="problem-statement" class="level2">
+<h2 class="anchored" data-anchor-id="problem-statement">Problem statement</h2>
+<p>Cresta’s <a href="https://kdd-eval-workshop.github.io/genai-evaluation-kdd2025/assets/papers/Submission%2022.pdf">Shin et al.&nbsp;(2025) KDD paper</a> on factuality assessment proposed the <code>3D paradigm</code> for factuality evaluation in an LLM-as-judge framework. The paradigm was specifically designed to assess analytical claims against conversational reference texts that are not explicitly verifiable because they are implied, rather than explicitly stated.</p>
+<p>Here, we try to build on this approach by directing the LLM to process conversational data through the Question Under Discussion (QUD) framework. Whereas Shin et al.’s prompt focuses on dissecting the to-be-verified claim and leaves the transcript itself untouched, our QUD-based approach transforms the transcripts and leaves the claim untouched.</p>
+<p>We use the <a href="https://github.com/cresta/fect">synthetic datasets</a> published alongside the original paper to compare the original 3D paradigm to the novel QUD-based approach, focusing on the OpenAI models only. Just like the original paper, we compare F1 scores on the task of detecting <code>False</code> claims.</p>
+</section>
+<section id="comparing-the-prompts" class="level2">
+<h2 class="anchored" data-anchor-id="comparing-the-prompts">Comparing the prompts</h2>
+<div class="text-comparison">
+<div class="text-column">
+<p><strong>Original 3D Paradigm Prompt:</strong></p>
+<pre class="scrollable-text">Given a conversation and a short answer, verify the short answer by referencing the conversation. First, break down the short answer into claims using the `A Step to Extract Claims` below. Next, verify each part of the claim and the relation between each part of the claim using `Steps to Evaluate Each Claim` below.
+
+## A Step to Extract Claims ##
+Step 1: Identify claims from the short answer. Example: "Customer was annoyed about slow delivery" -&gt; "There was a delivery", "The delivery was slow", "Customer was annoyed", "Customer was annoyed specifically about slow delivery"
+
+## Steps to Evaluate Each Claim ##
+Step 2: In each claim, identify words that have concrete meanings. Example: "There was a delivery" -&gt; "delivery". Verify those words by finding explicit mentions or references. When a word or a phrase can be interpreted in more than one way, see if at least one interpretation can be verified. Example: If a conversation includes discussions of receiving email notifications, this verifies one meaning of "delivery".
+Step 3: In each claim, identify words that subjectively describe other words having concrete meanings. These words often describe a product or a service. Example: "The delivery was slow" -&gt; "slow". Verify these words loosely with the context of the conversation.
+Step 4: In each claim, identify words that are about subjective interpretation of the conversation. These words often describe sentiments and emotions from a third-person point of view. Example: "Customer was annoyed" -&gt; "annoyed". Verify these words by finding minimal implicit evidence. Example: "annoyed" is verified with implicit evidence reflecting negative sentiment. 
+Step 5: In each claim, verify the relation between words. Focus on verifying the relation between words, while ignoring the verifications of the words themselves in this step. Verify the relation with explicit evidence or by inferring the reason behind an action or a message. Example: "Customer was annoyed specifically about slow delivery" -&gt; Verify that the source of a customer's sentiment was indeed the "slow delivery" while ignoring the verifications of "slow" and "annoyed". If a customer asks about filing a complaint after discussing slow delivery without explicitly expressing a negative sentiment, the customer must have been annoyed by the slow delivery. This inferred reason behind the customer's action verifies the relation.
+
+## Output for Each Claim as JSON ## 
+1. claim: The exact claim (as identified in Step 1). 
+2. reasoning: A detailed reasoning for whether the claim was verified or not.
+3. is_claim_verified: True if the claim was verified in Steps 2, 3, 4 and 5; otherwise False.
+
+## Output Format as JSON ##
+claims: list of all the claims generated above in the mentioned format.
+reasoning: A concise summary of the reasoning for the final answer.
+answer: True or False (True if short_answer is verified; otherwise, False).</pre>
+</div>
+<div class="text-column">
+<strong>QUD-based Prompt:</strong>
+<pre class="scrollable-text">Given a conversation and a short answer, verify the short answer by referencing the conversation. First, transform the conversation into a structured representation where each utterance is annotated with the Question Under Discussion (QUD) it addresses, using the `Steps to Transform the Conversation` below. Next, verify the claim with reference to the transformed conversation.
+
+## Steps to Transform the Conversation ##
+Step 1: Read the conversation carefully and break it down into individual utterances. Keep speaker labels (e.g., Agent, Customer).
+Step 2: Identify explicit and implicit questions guiding the conversation. Questions can be literal (e.g., "When does the store close?") or inferred from the context (e.g., a greeting implies the QUD: "How do we open this call politely?").
+Step 3: Assign a QUD to each utterance. If the utterance introduces a new question, note it as "Introduces QUD X." If the utterance answers or acknowledges a question, note which QUD it resolves or addresses. Include implicit social QUDs (e.g., greetings, closings).
+Step 4: Output the conversation in a structured format like this:
+
+```
+Speaker: Utterance
+- QUD: [Describe the current question under discussion or note introduction/resolution]
+```
+
+Step 5: Create a final hierarchy of QUDs at the end that shows how questions are nested or related, as in the following example:
+
+```
+QUD 1: How to open the call?
+    → QUD 2: What does the customer need?
+        → QUD 3: When are the events?
+```
+
+Example Output (Simplified):
+
+```
+Agent: Good afternoon!
+- QUD: Opening the call politely.
+
+Customer: Hi, I'm interested in upcoming events.
+- QUD: Introduces main goal — What events are available?
+
+Agent: May I put you on hold while I check?
+- QUD: Introduces sub-question — Is it okay to put the customer on hold?
+
+Customer: Sure, I don't mind waiting.
+- QUD: Resolves sub-question about being placed on hold.
+
+```
+
+Final Hierarchy:
+```
+QUD 1: How to open the call?
+    → QUD 2: What events are available?
+        → QUD 3: May I put the customer on hold?
+```
+
+## Output Format as JSON ##
+reasoning: A concise summary of the reasoning for the final answer.
+answer: True or False (True if short_answer is verified; otherwise, False).</pre>
+</div>
+</div>
+<style>
+.text-comparison {
+    display: flex;
+    gap: 20px;
+    margin: 20px 0;
+}
+.text-column {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+}
+.scrollable-text {
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 3px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    font-size: 13px;
+    line-height: 1.4;
+}
+</style>
+</section>
+<section id="analysis" class="level2">
+<h2 class="anchored" data-anchor-id="analysis">Analysis</h2>
+<div id="d3932bbf-acf6-4f8f-b3a9-a870a599fedd" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
@@ -123,23 +232,29 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df.sort_values(<span class="st">'f1_score'</span>, ascending<span class="op">=</span><span class="va">False</span>).<span class="bu">round</span>(<span class="dv">2</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                      model prompt       ttc  f1_score
-0   gpt-4.1-mini-2025-04-14     3D    NO_TTC      0.70
-5   gpt-4.1-mini-2025-04-14    QUD  WITH_TTC      0.66
-1   gpt-4.1-mini-2025-04-14     3D  WITH_TTC      0.63
-4   gpt-4.1-mini-2025-04-14    QUD    NO_TTC      0.63
-2   gpt-4.1-mini-2025-04-14  BASIC    NO_TTC      0.59
-3   gpt-4.1-mini-2025-04-14  BASIC  WITH_TTC      0.53
-6   gpt-4.1-nano-2025-04-14     3D    NO_TTC      0.52
-10  gpt-4.1-nano-2025-04-14    QUD    NO_TTC      0.49
-8   gpt-4.1-nano-2025-04-14  BASIC    NO_TTC      0.39
-7   gpt-4.1-nano-2025-04-14     3D  WITH_TTC      0.35
-9   gpt-4.1-nano-2025-04-14  BASIC  WITH_TTC      0.31
-11  gpt-4.1-nano-2025-04-14    QUD  WITH_TTC      0.24</code></pre>
+1        gpt-4.1-2025-04-14     3D  WITH_TTC      0.86
+4        gpt-4.1-2025-04-14    QUD    NO_TTC      0.86
+5        gpt-4.1-2025-04-14    QUD  WITH_TTC      0.85
+3        gpt-4.1-2025-04-14  BASIC  WITH_TTC      0.82
+0        gpt-4.1-2025-04-14     3D    NO_TTC      0.79
+2        gpt-4.1-2025-04-14  BASIC    NO_TTC      0.79
+6   gpt-4.1-mini-2025-04-14     3D    NO_TTC      0.70
+11  gpt-4.1-mini-2025-04-14    QUD  WITH_TTC      0.66
+7   gpt-4.1-mini-2025-04-14     3D  WITH_TTC      0.63
+10  gpt-4.1-mini-2025-04-14    QUD    NO_TTC      0.63
+8   gpt-4.1-mini-2025-04-14  BASIC    NO_TTC      0.59
+9   gpt-4.1-mini-2025-04-14  BASIC  WITH_TTC      0.53
+12  gpt-4.1-nano-2025-04-14     3D    NO_TTC      0.52
+16  gpt-4.1-nano-2025-04-14    QUD    NO_TTC      0.49
+14  gpt-4.1-nano-2025-04-14  BASIC    NO_TTC      0.39
+13  gpt-4.1-nano-2025-04-14     3D  WITH_TTC      0.35
+15  gpt-4.1-nano-2025-04-14  BASIC  WITH_TTC      0.31
+17  gpt-4.1-nano-2025-04-14    QUD  WITH_TTC      0.24</code></pre>
 </div>
 </div>
-<div id="a994d3cc" class="cell" data-execution_count="82">
+<div id="a994d3cc" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create facets for each model</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>g <span class="op">=</span> sns.FacetGrid(df, col<span class="op">=</span><span class="st">'model'</span>, col_wrap<span class="op">=</span><span class="dv">2</span>, height<span class="op">=</span><span class="dv">4</span>, aspect<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>g <span class="op">=</span> sns.FacetGrid(df, col<span class="op">=</span><span class="st">'model'</span>, col_wrap<span class="op">=</span><span class="dv">3</span>, height<span class="op">=</span><span class="dv">4</span>, aspect<span class="op">=</span><span class="dv">1</span>)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Map barplot to each facet</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_bars(data, <span class="op">**</span>kwargs):</span>
@@ -168,8 +283,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<p>The initial comparison suggests that we might be onto something here: the QUD prompt does significantly better than the BASIC prompt, and is comparable to the 3D paradigm prompt.</p>
-<p>Note that it also reverts one of the counterintuitive findings from the original paper, namely that test-time compute (TTC) tended to degrade performance under the 3D paradigm: the QUD prompt appears to actually benefit from TTC, at least with the more sophisticated <code>gpt-4.1-mini</code> model.</p>
+</section>
+<section id="results" class="level2">
+<h2 class="anchored" data-anchor-id="results">Results</h2>
+<p>The initial comparison suggests that we might be onto something here: the <code>QUD prompt</code> does significantly better than the <code>BASIC</code> prompt, and is comparable to the <code>3D paradigm</code> prompt.</p>
+<p>Note that the QUD prompt didn’t dissect the claim at all, so it doesn’t benefit from identifying sub-claims like the 3D paradigm does.</p>
+<p>Directing the LLM to identify the (often implicit) QUDs behind each utterance in the transcript appears to help it verify implicit claims. Since much of Cresta’s product suite (behind the AI Analyst that’s being evaluated here) applies downstream models to conversational transcripts (either complete transcripts or ones that are unfolding in real time), the results here suggest that augmenting raw transcripts by parsing them within the QUD framework may benefit other downstream parts of the system far behind the evaluation of claims made by the AI Analyst.</p>
+</section>
 
 </main>
 <!-- /main column -->

@@ -1,0 +1,83 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Render Notebook to HTML",
+            "type": "shell",
+            "command": "py",
+            "args": [
+                "-m",
+                "jupyter",
+                "nbconvert",
+                "--to",
+                "html",
+                "--execute",
+                "reports/analysis.ipynb",
+                "--output-dir",
+                "docs",
+                "--output",
+                "index.html"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "detail": "Convert Jupyter notebook to HTML and save to docs/index.html"
+        },
+        {
+            "label": "Render Notebook (No Execute)",
+            "type": "shell",
+            "command": "py",
+            "args": [
+                "-m",
+                "jupyter",
+                "nbconvert",
+                "--to",
+                "html",
+                "reports/analysis.ipynb",
+                "--output-dir",
+                "docs",
+                "--output",
+                "index.html"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "detail": "Convert Jupyter notebook to HTML without executing cells"
+        },
+        {
+            "label": "Open Rendered HTML",
+            "type": "shell",
+            "command": "start",
+            "args": [
+                "docs/index.html"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": false,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Open the rendered HTML file in default browser",
+            "dependsOn": "Render Notebook to HTML"
+        }
+    ]
+}
