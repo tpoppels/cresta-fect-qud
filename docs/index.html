@@ -14510,13 +14510,34 @@ answer: True or False (True if short_answer is verified; otherwise, False).</pre
 </div>
 <div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Results">Results<a class="anchor-link" href="#Results">&#182;</a></h2><p>The initial comparison suggests that we might be onto something here: the <code>QUD prompt</code> does significantly better than the <code>BASIC</code> prompt, and is comparable to the <code>3D paradigm</code> prompt.</p>
+<h2 id="Numerical-results">Numerical results<a class="anchor-link" href="#Numerical-results">&#182;</a></h2><p>The initial comparison suggests that we might be onto something here: the <code>QUD prompt</code> does significantly better than the <code>BASIC</code> prompt, and is comparable to the <code>3D paradigm</code> prompt.</p>
 <p>Note that the QUD prompt didn't dissect the claim at all, so it doesn't benefit from identifying sub-claims like the 3D paradigm does.</p>
 <p>Directing the LLM to identify the (often implicit) QUDs behind each utterance in the transcript appears to help it verify implicit claims.
 Since much of Cresta's product suite (behind the AI Analyst that's being evaluated here) applies downstream models to conversational transcripts (either complete transcripts or ones that are unfolding in real time), the results here suggest that augmenting raw transcripts by parsing them within the QUD framework may benefit other downstream parts of the system far behind the evaluation of claims made by the AI Analyst.</p>
-<p>&lt;/div&gt;</p>
 
 </div>
+</div>
+<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h2 id="Beyond-F1:-digging-into-the-LLM's-reasoning-(in-progress)">Beyond F1: digging into the LLM's reasoning (in progress)<a class="anchor-link" href="#Beyond-F1:-digging-into-the-LLM's-reasoning-(in-progress)">&#182;</a></h2><p>We compared a new QUD-based prompt to the 3D paradigm proposed by Shin et al. (2025) and found comparable F1 scores across 3 non-reasoning LLMs. While this is encouraging, it is important to note that this prompt breaks the alignment between the LLM and the human annotators who were instructed to follow the 3D paradigm.</p>
+<p>However, according to the theory behind the QUD prompt, human comprehenders inadvertently interpret all natural language utterances as the answer to an often implicit QUD, meaning that instructing the LLM to do so as well may in theory lead to increased alignment in its own right. (It would be interesting to see if QUD-based instructions to human annotators could actually raise the inter-annotator agreement; I wouldn't be surprised!)</p>
+<p>To shed light on the issue of alignment, I will analyze the LLM's test-time compute reasoning, comparing specifically the 3D prompt and the QUD prompt on the largest model I tested (<code>gpt-4.1-2025-04-14</code>).</p>
+
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[&nbsp;]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span> 
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
 </div>
 </body>
 
